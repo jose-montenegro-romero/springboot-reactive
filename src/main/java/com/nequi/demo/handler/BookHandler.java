@@ -2,14 +2,11 @@ package com.nequi.demo.handler;
 
 import com.nequi.demo.model.Book;
 import com.nequi.demo.service.BookService;
-import jakarta.validation.Valid;
+import com.nequi.demo.utils.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.Errors;
-import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
@@ -26,7 +23,7 @@ public class BookHandler {
     private BookService bookService;
 
     @Autowired
-    private Validator validator;
+    private ValidationUtils validationUtils;
 
     private static final Mono<ServerResponse> response404 = ServerResponse.notFound().build();
     private static final Mono<ServerResponse> response406 = ServerResponse.status(HttpStatus.NOT_ACCEPTABLE).build();
@@ -89,22 +86,18 @@ public class BookHandler {
     }
 
     public Mono<ServerResponse> saveBook(ServerRequest serverRequest) {
-        Mono<Book> bookMono = serverRequest.bodyToMono(Book.class).doOnNext(this::validateBook);
-
-        return bookMono
-                .doOnNext(book -> {
+        return serverRequest.bodyToMono(Book.class)
+                .flatMap(validationUtils::validateObject)
+                .flatMap(book -> {
                     if (book.getId() == null || book.getId() == 0) {
                         book.setId(null);
                     }
-                    System.out.println("Datos del libro: " + book);
+                    return bookService.save(book);
                 })
-                .flatMap(book -> bookService.save(book)
-                        .flatMap(bookSave -> ServerResponse
-                                .accepted()
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(fromValue(bookSave))
-                        )
-                )
+                .flatMap(bookSave -> ServerResponse
+                        .accepted()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(fromValue(bookSave)))
                 .onErrorResume(e -> ServerResponse.badRequest().bodyValue(e.getMessage()))
                 .switchIfEmpty(response406);
     }
@@ -121,15 +114,4 @@ public class BookHandler {
                 .body(deleteBook, Void.class);
     }
 
-    private Mono<Book> validateBook(@Valid Book book) {
-        return Mono.just(book);
-    }
-
-    private void validate(Book book) {
-        Errors errors = new BeanPropertyBindingResult(book, Book.class.getName());
-        validator.validate(book, errors);
-        if (errors.hasErrors()) {
-            throw new IllegalArgumentException(errors.getAllErrors().toString());
-        }
-    }
 }
