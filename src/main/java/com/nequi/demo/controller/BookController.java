@@ -34,6 +34,7 @@ public class BookController {
 
     @GetMapping(value = "/{id}")
     public Mono<ResponseEntity<Book>> findById(@PathVariable Long id) {
+        System.out.println("El id es:" +id);
         return bookService.findById(id)
                 .map(c -> ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_JSON)

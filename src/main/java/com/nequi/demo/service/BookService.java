@@ -10,6 +10,8 @@ public interface BookService{
 
     public Mono<Book> findById(Long id);
 
+    public Mono<Book> saveUpdate(Book book);
+
     public Mono<Book> save(Book book);
 
     public Mono<Void> deleteById(Long id);

@@ -24,6 +24,11 @@ public class BookServiceImpl implements BookService{
     }
 
     @Override
+    public Mono<Book> saveUpdate(Book book) {
+        return bookRepository.save(book);
+    }
+
+    @Override
     public Mono<Book> save(Book book) {
         return bookRepository.save(book);
     }
