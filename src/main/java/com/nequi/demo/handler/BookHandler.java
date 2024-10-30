@@ -1,5 +1,6 @@
 package com.nequi.demo.handler;
 
+import com.nequi.demo.dto.BookMapper;
 import com.nequi.demo.model.Book;
 import com.nequi.demo.service.BookService;
 import com.nequi.demo.utils.ValidationUtils;
@@ -49,15 +50,24 @@ public class BookHandler {
     }
 
     public Mono<ServerResponse> getAllBooks(ServerRequest serverRequest) {
-        return ServerResponse
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(bookService.findAll(), Book.class);
+//        return ServerResponse
+//                .ok()
+//                .contentType(MediaType.APPLICATION_JSON)
+//                .body(bookService.findAll(), Book.class);
+            return bookService.findAll()
+                    .map(BookMapper.INSTANCE::bookToBookDTO)
+                    .collectList()
+                    .flatMap(books -> ServerResponse
+                            .ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(fromValue(books))
+                    );
     }
 
     public Mono<ServerResponse> findById(ServerRequest serverRequest) {
         String id = serverRequest.pathVariable("id");
         return bookService.findById(Long.valueOf(id))
+                .map(BookMapper.INSTANCE::bookToBookDTO)
                 .flatMap(book -> ServerResponse
                         .ok()
                         .contentType(MediaType.APPLICATION_JSON)
