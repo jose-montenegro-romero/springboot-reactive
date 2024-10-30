@@ -10,4 +10,4 @@ spring:
     password:
 
 server:
-  port: 3333
+  port: ${PORT:3333}
